@@ -21,26 +21,89 @@ const FIELDS: { key: string; label: string; half?: boolean; type?: string }[] = 
   { key: 'state', label: 'State' },
 ];
 
+type PayCfg = {
+  cod: boolean; upi: boolean; bank: boolean;
+  upiId: string; upiName: string; bankName: string; bankHolder: string;
+  bankAccount: string; bankIfsc: string; qrDataUrl: string | null; note: string;
+};
+
+/** Read + downscale an uploaded payment screenshot into a JPEG data URL. */
+function fileToDataUrl(file: File, max = 900): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        const ctx = c.getContext('2d');
+        if (!ctx) return reject(new Error('canvas'));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = reject;
+      img.src = String(fr.result);
+    };
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const lines = useCart((s) => s.lines);
   const clear = useCart((s) => s.clear);
   const [ready, setReady] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({ state: 'Uttar Pradesh' });
-  const [payment, setPayment] = useState<'cod' | 'upi'>('cod');
+  const [payment, setPayment] = useState<'cod' | 'upi' | 'bank'>('cod');
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [payCfg, setPayCfg] = useState<PayCfg | null>(null);
+  const [proof, setProof] = useState<string | null>(null);
 
   useEffect(() => {
     currentUser().then((u) => {
       if (!u) router.replace('/login?next=/checkout');
       else setReady(true);
     });
+    fetch('/api/payments')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        if (c) {
+          setPayCfg(c);
+          setPayment(c.cod ? 'cod' : c.upi ? 'upi' : 'bank');
+        }
+      })
+      .catch(() => {});
   }, [router]);
 
   const subtotal = useMemo(() => lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0), [lines]);
   const shipping = lines.length === 0 || subtotal >= FREE_OVER ? 0 : SHIP;
   const total = subtotal + shipping;
+
+  const en = { cod: payCfg?.cod ?? true, upi: payCfg?.upi ?? true, bank: payCfg?.bank ?? true };
+  const payMethods = (
+    [
+      en.cod && { id: 'cod' as const, title: 'Cash on Delivery', desc: 'Pay when your order arrives.' },
+      en.upi && { id: 'upi' as const, title: 'UPI', desc: 'Pay via any UPI app, then upload the payment screenshot.' },
+      en.bank && { id: 'bank' as const, title: 'Bank Transfer', desc: 'NEFT / IMPS to our account, then upload the payment screenshot.' },
+    ] as ({ id: 'cod' | 'upi' | 'bank'; title: string; desc: string } | false)[]
+  ).filter((x): x is { id: 'cod' | 'upi' | 'bank'; title: string; desc: string } => Boolean(x));
+
+  async function onProof(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      setProof(await fileToDataUrl(f));
+      setError(null);
+    } catch {
+      setError('Could not read that image. Try another screenshot.');
+    }
+  }
 
   async function placeOrder() {
     setError(null);
@@ -58,6 +121,7 @@ export default function CheckoutPage() {
           items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
           address: form,
           paymentMethod: payment,
+          paymentProof: payment === 'cod' ? null : proof,
         }),
       });
       const json = await res.json();
@@ -117,23 +181,52 @@ export default function CheckoutPage() {
           <section className="rounded-[var(--radius-lux)] border p-6 sm:p-8" style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 12%, transparent)' }}>
             <h2 className="display text-[20px]">Payment method</h2>
             <div className="mt-5 space-y-3">
-              {([['cod', 'Cash on Delivery', 'Pay when your order arrives.'], ['upi', 'UPI', 'Pay via any UPI app (instruction sent after ordering).']] as const).map(([id, title, desc]) => (
+              {payMethods.map((m) => (
                 <button
-                  key={id}
-                  onClick={() => setPayment(id)}
+                  key={m.id}
+                  onClick={() => setPayment(m.id)}
                   className="flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors"
-                  style={{ borderColor: payment === id ? 'var(--color-saffron-500)' : 'color-mix(in oklab, var(--color-ink-50) 14%, transparent)' }}
+                  style={{ borderColor: payment === m.id ? 'var(--color-saffron-500)' : 'color-mix(in oklab, var(--color-ink-50) 14%, transparent)' }}
                 >
-                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border" style={{ borderColor: payment === id ? 'var(--color-saffron-500)' : 'color-mix(in oklab, var(--color-ink-50) 30%, transparent)' }}>
-                    {payment === id && <span className="h-2.5 w-2.5 rounded-full bg-saffron-500" />}
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border" style={{ borderColor: payment === m.id ? 'var(--color-saffron-500)' : 'color-mix(in oklab, var(--color-ink-50) 30%, transparent)' }}>
+                    {payment === m.id && <span className="h-2.5 w-2.5 rounded-full bg-saffron-500" />}
                   </span>
                   <span>
-                    <span className="block text-[14px] font-medium">{title}</span>
-                    <span className="mt-0.5 block text-[12px] text-ink-500">{desc}</span>
+                    <span className="block text-[14px] font-medium">{m.title}</span>
+                    <span className="mt-0.5 block text-[12px] text-ink-500">{m.desc}</span>
                   </span>
                 </button>
               ))}
             </div>
+
+            {payment !== 'cod' && payCfg && (
+              <div className="mt-6 rounded-xl border p-5" style={{ borderColor: 'color-mix(in oklab, var(--color-saffron-500) 30%, transparent)', background: 'color-mix(in oklab, var(--color-saffron-500) 6%, transparent)' }}>
+                {payment === 'upi' && payCfg.qrDataUrl && (
+                  <div className="flex items-start gap-5">
+                    <img src={payCfg.qrDataUrl} alt="UPI QR code" className="h-36 w-36 shrink-0 rounded-lg bg-white p-2" />
+                    <div className="text-[13px]">
+                      <p className="font-medium">Scan &amp; pay via UPI</p>
+                      <p className="mt-1 text-ink-400">{payCfg.upiName}</p>
+                      <p className="mt-0.5 font-mono text-saffron-500">{payCfg.upiId}</p>
+                    </div>
+                  </div>
+                )}
+                {payment === 'bank' && (
+                  <dl className="grid gap-3 text-[13px] sm:grid-cols-2">
+                    <div><dt className="text-[10px] uppercase tracking-[0.14em] text-ink-500">Account name</dt><dd className="mt-0.5">{payCfg.bankHolder}</dd></div>
+                    <div><dt className="text-[10px] uppercase tracking-[0.14em] text-ink-500">Bank</dt><dd className="mt-0.5">{payCfg.bankName}</dd></div>
+                    <div><dt className="text-[10px] uppercase tracking-[0.14em] text-ink-500">Account no.</dt><dd className="mt-0.5 font-mono">{payCfg.bankAccount}</dd></div>
+                    <div><dt className="text-[10px] uppercase tracking-[0.14em] text-ink-500">IFSC</dt><dd className="mt-0.5 font-mono">{payCfg.bankIfsc}</dd></div>
+                  </dl>
+                )}
+                <p className="mt-4 text-[12px] leading-relaxed text-ink-400">{payCfg.note}</p>
+                <label className="mt-4 inline-block cursor-pointer">
+                  <span className="lux-btn-ghost inline-block">{proof ? 'Replace screenshot' : 'Upload payment screenshot'}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={onProof} />
+                </label>
+                {proof && <p className="mt-2 text-[12px] text-saffron-500">Payment screenshot attached ✓</p>}
+              </div>
+            )}
           </section>
         </div>
 

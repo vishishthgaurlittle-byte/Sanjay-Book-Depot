@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import { SplashScreen } from '@/components/SplashScreen';
 import { ServiceWorker } from '@/components/ServiceWorker';
+import { ThemeSync } from '@/components/ThemeSync';
 import { getActiveTheme } from '@/lib/settings';
 import { themeCss } from '@/lib/themes';
 import './globals.css';
@@ -146,6 +147,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-ink-950 font-sans text-ink-200 antialiased">
         <SplashScreen />
         <ServiceWorker />
+        <ThemeSync />
         {/* Organization + logo structured data → Google shows the logo in search results. */}
         <script
           type="application/ld+json"

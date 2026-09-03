@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     items?: { productId: string; quantity: number }[];
     address?: Record<string, string>;
     paymentMethod?: string;
+    paymentProof?: string;
   };
   try {
     body = await req.json();
@@ -96,11 +97,14 @@ export async function POST(req: Request) {
   const orderNumber = `SBD-${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 90 + 10)}`;
   const shippingAddress = `${a.fullName}, ${a.line1}${a.line2 ? ', ' + a.line2 : ''}, ${a.city}, ${a.state} ${a.pincode}, India · ${a.phone}`;
 
+  const payMethod = body.paymentMethod === 'upi' ? 'upi' : body.paymentMethod === 'bank' ? 'netbanking' : 'cod';
+  const proof = typeof body.paymentProof === 'string' && body.paymentProof.startsWith('data:image') ? body.paymentProof : null;
+
   await run(
     `INSERT INTO orders (id, order_number, customer_id, status, payment_status, payment_method,
-       subtotal, discount_amount, shipping_fee, tax_amount, total, shipping_address, placed_at, created_at, updated_at)
-     VALUES (?, ?, ?, 'confirmed', 'unpaid', ?, ?, 0, ?, 0, ?, ?, ?, ?, ?)`,
-    [orderId, orderNumber, customerId, body.paymentMethod === 'upi' ? 'upi' : 'cod', subtotal, shipping, total, shippingAddress, now, now, now],
+       subtotal, discount_amount, shipping_fee, tax_amount, total, shipping_address, payment_proof, placed_at, created_at, updated_at)
+     VALUES (?, ?, ?, 'confirmed', 'unpaid', ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?)`,
+    [orderId, orderNumber, customerId, payMethod, subtotal, shipping, total, shippingAddress, proof, now, now, now],
   );
 
   for (const l of lines) {

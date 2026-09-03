@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const LINKS = [
-  { href: '/admin/settings', label: 'Appearance' },
+  { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/products', label: 'Products' },
   { href: '/admin/khata', label: 'Khata' },
+  { href: '/admin/payments', label: 'Payments' },
+  { href: '/admin/settings', label: 'Appearance' },
 ];
 
 /** Shared tab bar across the admin panel. */
