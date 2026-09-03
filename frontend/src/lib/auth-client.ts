@@ -150,18 +150,16 @@ export async function currentUser() {
   // Google sessions are self-contained (signed by our server) — Insforge has
   // never seen them, so trust the locally stored user instead of re-checking.
   if (token.startsWith('sbdc.')) return getUser();
-  const res = await authFetch<{ user?: SessionUser }>('sessions/current');
-  if (!res.ok || !res.data) {
-    // Access token expired — silently refresh so the login lasts until logout.
-    const refreshed = await tryRefresh();
-    if (refreshed) return refreshed;
-    saveSession(null, null);
-    localStorage.removeItem(REFRESH_KEY);
-    return null;
+  const res = await authFetch<{ user?: SessionUser }>('sessions');
+  if (res.ok && res.data?.user) {
+    saveSession(getToken(), res.data.user);
+    return res.data.user;
   }
-  const user = res.data.user ?? null;
-  if (user) saveSession(getToken(), user);
-  return user;
+  // Access token expired — silently refresh so the login lasts until logout.
+  const refreshed = await tryRefresh();
+  if (refreshed) return refreshed;
+  // Never auto-logout on a failed revalidation — stay signed in until logout().
+  return getUser();
 }
 
 /** Exchange the stored refresh token for a fresh access token (keeps login permanent). */

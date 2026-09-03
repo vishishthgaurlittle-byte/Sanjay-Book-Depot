@@ -35,7 +35,7 @@ export default function GoogleAuthButton({ redirectTo = '/' }: { redirectTo?: st
     setError(null);
     try {
       const { data, error: err } = await insforgeBrowser().auth.signInWithOAuth('google', {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/api/auth/oauth-return`,
         skipBrowserRedirect: true,
       });
       if (err || !data?.url) {
@@ -43,7 +43,11 @@ export default function GoogleAuthButton({ redirectTo = '/' }: { redirectTo?: st
         setBusy(false);
         return;
       }
-      if (data.codeVerifier) localStorage.setItem(VERIFIER_KEY, data.codeVerifier);
+      if (data.codeVerifier) {
+        localStorage.setItem(VERIFIER_KEY, data.codeVerifier);
+        // Also put the PKCE verifier in a cookie so the server callback can exchange.
+        document.cookie = `sbd_pkce=${encodeURIComponent(data.codeVerifier)}; path=/; max-age=600; samesite=lax`;
+      }
       localStorage.setItem('sbd.oauth.next', redirectTo);
       window.location.href = data.url;
     } catch (e) {
