@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { LogoMark } from '@/components/Logo';
 import { cartCount, useCart } from '@/store/cart';
 
 const NAV = [
@@ -70,12 +71,15 @@ export default function Header() {
             </div>
           </button>
 
-          <Link href="/" className="group shrink-0">
-            <span className="display block text-[22px] leading-none tracking-[0.02em] sm:text-[26px]">
-              Sanjay
-            </span>
-            <span className="mt-1 block text-[9px] font-medium uppercase tracking-[0.42em] text-saffron-500">
-              Book Depot
+          <Link href="/" className="group flex shrink-0 items-center gap-3">
+            <LogoMark size={42} className="shrink-0 transition-transform duration-500 group-hover:rotate-[8deg]" />
+            <span className="block">
+              <span className="display block text-[20px] leading-none tracking-[0.02em] sm:text-[24px]">
+                Sanjay
+              </span>
+              <span className="mt-1 block text-[9px] font-medium uppercase tracking-[0.42em] text-saffron-500">
+                Book Depot
+              </span>
             </span>
           </Link>
 

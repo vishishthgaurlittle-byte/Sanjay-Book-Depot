@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E3BE76"/>
+      <stop offset="1" stop-color="#A87C2A"/>
+    </linearGradient>
+  </defs>
+  <rect width="150" height="150" rx="32" fill="#12100C"/>
+  <circle cx="75" cy="75" r="59" fill="none" stroke="url(#g)" stroke-width="5"/>
+  <circle cx="75" cy="75" r="49" fill="none" stroke="url(#g)" stroke-width="1.5" opacity="0.5"/>
+  <text x="75" y="91" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="46" font-weight="700" letter-spacing="1" fill="url(#g)">SBD</text>
+</svg>

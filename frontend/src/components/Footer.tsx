@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { LogoSeal } from '@/components/Logo';
+
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: 'Shop',
@@ -65,10 +67,13 @@ export default function Footer() {
         {/* Links */}
         <div className="grid gap-10 py-16 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <Link href="/" className="inline-block">
-              <span className="display block text-[26px] leading-none">Sanjay</span>
-              <span className="mt-1.5 block text-[9px] font-medium uppercase tracking-[0.42em] text-saffron-500">
-                Book Depot
+            <Link href="/" className="inline-flex items-center gap-4">
+              <LogoSeal size={92} className="shrink-0" />
+              <span className="block">
+                <span className="display block text-[26px] leading-none">Sanjay</span>
+                <span className="mt-1.5 block text-[9px] font-medium uppercase tracking-[0.42em] text-saffron-500">
+                  Book Depot
+                </span>
               </span>
             </Link>
             <p className="mt-6 max-w-xs text-[13px] leading-relaxed text-ink-400">
