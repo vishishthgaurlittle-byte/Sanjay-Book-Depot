@@ -29,7 +29,36 @@ const sans = Inter({
   display: 'swap',
 });
 
+export const SITE_URL = (() => {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  return 'https://sanjay-book-depot.vercel.app';
+})();
+const LOGO_URL = `${SITE_URL}/icons/icon-512.png`;
+
+const ORGANIZATION_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': `${SITE_URL}/#organization`,
+  name: 'Sanjay Book Depot',
+  alternateName: ['SBD', 'Sanjay Books'],
+  url: `${SITE_URL}/`,
+  logo: LOGO_URL,
+  image: LOGO_URL,
+  description:
+    'Premium stationery retailer — notebooks, art supplies, office essentials and writing instruments from 52 of India’s finest brands, shipped from Lucknow across India.',
+  foundingDate: '1994',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Lucknow',
+    addressRegion: 'Uttar Pradesh',
+    addressCountry: 'IN',
+  },
+  contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', areaServed: 'IN' },
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Sanjay Book Depot — Premium Stationery, Delivered',
     template: '%s — Sanjay Book Depot',
@@ -53,6 +82,21 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Sanjay Book Depot',
+  },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/`,
+    siteName: 'Sanjay Book Depot',
+    title: 'Sanjay Book Depot — Premium Stationery, Delivered',
+    description:
+      'Premium stationery from 52 of India’s finest brands — shipped from Lucknow across India.',
+    images: [{ url: LOGO_URL, width: 512, height: 512, alt: 'Sanjay Book Depot logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Sanjay Book Depot',
+    description: 'Premium stationery from 52 of India’s finest brands.',
+    images: [LOGO_URL],
   },
 };
 
@@ -82,6 +126,11 @@ export default async function RootLayout({
       <body className="min-h-screen bg-ink-950 font-sans text-ink-200 antialiased">
         <SplashScreen />
         <ServiceWorker />
+        {/* Organization + logo structured data → Google shows the logo in search results. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_LD) }}
+        />
         {/* Injected last so it overrides the default tokens in globals.css. */}
         <style dangerouslySetInnerHTML={{ __html: themeCss(theme) }} />
 
