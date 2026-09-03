@@ -12,8 +12,12 @@ export async function GET(req: Request) {
   const user = await verifyCustomer(bearerFrom(req));
   if (!user) return NextResponse.json({ isAdmin: false });
   const row = await one<Row>(
-    `SELECT role FROM admin_users WHERE lower(email) = lower(?) AND is_active = 1 LIMIT 1`,
+    `SELECT role, full_name FROM admin_users WHERE lower(email) = lower(?) AND is_active = 1 LIMIT 1`,
     [user.email],
   );
-  return NextResponse.json({ isAdmin: !!row, role: row ? String(row.role) : null });
+  return NextResponse.json({
+    isAdmin: !!row,
+    role: row ? String(row.role) : null,
+    name: row && row.full_name ? String(row.full_name) : null,
+  });
 }

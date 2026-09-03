@@ -37,6 +37,8 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminName, setAdminName] = useState<string | null>(null);
+  const [adminRole, setAdminRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -45,7 +47,14 @@ export default function AccountPage() {
     const h = { Authorization: `Bearer ${token}` };
     fetch('/api/orders', { headers: h }).then((r) => r.json()).then((j) => setOrders(j.orders || [])).catch(() => {});
     fetch('/api/addresses', { headers: h }).then((r) => r.json()).then((j) => setAddresses(j.addresses || [])).catch(() => {});
-    fetch('/api/account/is-admin', { headers: h }).then((r) => r.json()).then((j) => setIsAdmin(!!j.isAdmin)).catch(() => {});
+    fetch('/api/account/is-admin', { headers: h })
+      .then((r) => r.json())
+      .then((j) => {
+        setIsAdmin(!!j.isAdmin);
+        setAdminName(j.name ?? null);
+        setAdminRole(j.role ?? null);
+      })
+      .catch(() => {});
   }, [ready]);
 
   useEffect(() => {
@@ -89,12 +98,16 @@ export default function AccountPage() {
     );
   }
 
-  const initial = (user.name || user.email || 'S').trim().charAt(0).toUpperCase();
+  const prettyEmail = (user.email || '').split('@')[0].replace(/[._\d]+/g, ' ').trim();
+  const displayName =
+    user.name || adminName || (prettyEmail ? prettyEmail.replace(/\b\w/g, (c) => c.toUpperCase()) : 'Customer');
+  const firstName = displayName.split(' ')[0] || 'there';
+  const initial = (displayName || 'S').trim().charAt(0).toUpperCase();
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10 sm:px-6 lg:px-10">
       <p className="lux-eyebrow">My Account</p>
-      <h1 className="display mt-3 text-[clamp(2rem,5vw,3rem)]">Hello, {user.name?.split(' ')[0] || 'there'}</h1>
+      <h1 className="display mt-3 text-[clamp(2rem,5vw,3rem)]">Hello, {firstName}</h1>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[248px_1fr]">
         {/* Sidebar */}
@@ -102,7 +115,17 @@ export default function AccountPage() {
           <div className="mb-2 flex items-center gap-3 px-3 py-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-saffron-500 text-[16px] font-semibold text-saffron-on">{initial}</span>
             <span className="min-w-0">
-              <span className="block truncate text-[13px] font-medium">{user.name || 'Customer'}</span>
+              <span className="flex items-center gap-2">
+                <span className="block truncate text-[13px] font-medium">{displayName}</span>
+                {isAdmin && (
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.12em]"
+                    style={{ background: 'color-mix(in oklab, var(--color-saffron-500) 16%, transparent)', color: 'var(--color-saffron-500)' }}
+                  >
+                    {adminRole || 'Admin'}
+                  </span>
+                )}
+              </span>
               <span className="block truncate text-[11px] text-ink-500">{user.email}</span>
             </span>
           </div>
