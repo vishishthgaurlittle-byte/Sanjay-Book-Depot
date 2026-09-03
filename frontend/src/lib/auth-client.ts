@@ -10,6 +10,7 @@
 
 const TOKEN_KEY = 'sbd.session.token';
 const USER_KEY = 'sbd.session.user';
+const REFRESH_KEY = 'sbd.session.refresh';
 
 export interface SessionUser {
   id: string;
@@ -20,6 +21,24 @@ export interface SessionUser {
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(REFRESH_KEY);
+}
+
+/** Persist a full Insforge session (access + refresh + user) so login survives until logout. */
+export function rememberSession(data: unknown, email?: string, name?: string) {
+  if (typeof window === 'undefined') return { token: null, user: null };
+  const token = extractToken(data);
+  const refresh = extractRefreshToken(data);
+  const user = extractUser(data, email, name);
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+  if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+  return { token, user };
 }
 
 export function getUser(): SessionUser | null {
@@ -74,9 +93,8 @@ export async function register(email: string, password: string, name: string) {
     body: JSON.stringify({ email, password, name }),
   });
   if (!res.ok) return { ok: false as const, error: res.error ?? 'Registration failed.' };
-  const token = extractToken(res.data);
   const user = extractUser(res.data, email, name);
-  saveSession(token, user);
+  rememberSession(res.data, email, name);
   return { ok: true as const, user };
 }
 
@@ -89,13 +107,14 @@ export async function login(email: string, password: string) {
   const token = extractToken(res.data);
   const user = extractUser(res.data, email);
   if (!token) return { ok: false as const, error: 'Insforge did not return a session token.' };
-  saveSession(token, user);
+  rememberSession(res.data, email);
   return { ok: true as const, user };
 }
 
 export async function logout() {
   await authFetch('logout', { method: 'POST' });
   saveSession(null, null);
+  if (typeof window !== 'undefined') localStorage.removeItem(REFRESH_KEY);
 }
 
 /**
@@ -122,10 +141,7 @@ export async function loginWithGoogle(credential: string) {
  * treats a Google sign-in identically.
  */
 export function saveOAuthSession(data: unknown) {
-  const token = extractToken(data);
-  const user = extractUser(data);
-  if (token) saveSession(token, user);
-  return { token, user };
+  return rememberSession(data);
 }
 
 export async function currentUser() {
@@ -136,12 +152,41 @@ export async function currentUser() {
   if (token.startsWith('sbdc.')) return getUser();
   const res = await authFetch<{ user?: SessionUser }>('sessions/current');
   if (!res.ok || !res.data) {
+    // Access token expired — silently refresh so the login lasts until logout.
+    const refreshed = await tryRefresh();
+    if (refreshed) return refreshed;
     saveSession(null, null);
+    localStorage.removeItem(REFRESH_KEY);
     return null;
   }
   const user = res.data.user ?? null;
   if (user) saveSession(getToken(), user);
   return user;
+}
+
+/** Exchange the stored refresh token for a fresh access token (keeps login permanent). */
+async function tryRefresh(): Promise<SessionUser | null> {
+  const refresh = getRefreshToken();
+  if (!refresh) return null;
+  try {
+    const res = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+    if (!res.ok) return null;
+    const data: unknown = await res.json();
+    const token = extractToken(data);
+    const user = extractUser(data);
+    const newRefresh = extractRefreshToken(data);
+    if (!token || !user) return null;
+    localStorage.setItem(TOKEN_KEY, token);
+    if (newRefresh) localStorage.setItem(REFRESH_KEY, newRefresh);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 export function publicConfig() {
@@ -164,6 +209,19 @@ function extractToken(data: unknown): string | null {
     (d.token as string) ??
     null;
   return token ?? null;
+}
+
+function extractRefreshToken(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  const d = data as Record<string, unknown>;
+  const session = d.session as Record<string, unknown> | undefined;
+  return (
+    (session?.refresh_token as string) ??
+    (session?.refreshToken as string) ??
+    (d.refresh_token as string) ??
+    (d.refreshToken as string) ??
+    null
+  );
 }
 
 function extractUser(data: unknown, email?: string, name?: string): SessionUser | null {

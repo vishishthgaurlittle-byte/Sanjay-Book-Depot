@@ -3,6 +3,8 @@ import { Cormorant_Garamond, Inter } from 'next/font/google';
 
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
+import { SplashScreen } from '@/components/SplashScreen';
+import { ServiceWorker } from '@/components/ServiceWorker';
 import { getActiveTheme } from '@/lib/settings';
 import { themeCss } from '@/lib/themes';
 import './globals.css';
@@ -45,6 +47,13 @@ export const metadata: Metadata = {
     'Cello',
     'Sanjay Book Depot',
   ],
+  manifest: '/manifest.webmanifest',
+  applicationName: 'Sanjay Book Depot',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Sanjay Book Depot',
+  },
 };
 
 export const viewport: Viewport = {
@@ -71,6 +80,8 @@ export default async function RootLayout({
       className={`${serif.variable} ${sans.variable}`}
     >
       <body className="min-h-screen bg-ink-950 font-sans text-ink-200 antialiased">
+        <SplashScreen />
+        <ServiceWorker />
         {/* Injected last so it overrides the default tokens in globals.css. */}
         <style dangerouslySetInnerHTML={{ __html: themeCss(theme) }} />
 
