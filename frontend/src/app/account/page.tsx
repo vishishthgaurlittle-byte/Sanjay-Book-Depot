@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { currentUser, logout, getToken, type SessionUser } from '@/lib/auth-client';
+import { useCart } from '@/store/cart';
 
 type Order = { id: string; order_number: string; status: string; total: number; placed_at: string; items: { product_name: string; quantity: number }[] };
 type Address = { id: string; label: string; full_name: string; phone: string; line1: string; line2?: string | null; city: string; state: string; pincode: string; is_default_shipping: number };
@@ -62,6 +63,7 @@ export default function AccountPage() {
 
   async function signOut() {
     await logout();
+    useCart.getState().clear();
     router.replace('/');
     router.refresh();
   }
