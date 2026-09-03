@@ -1,0 +1,20 @@
+{
+  "name": "@sanjay-book-depot/backend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Sanjay Book Depot backend - Turso (database) + Insforge (auth & file storage)",
+  "scripts": {
+    "migrate": "node --env-file=.env src/scripts/migrate.mjs",
+    "migrate:reset": "node --env-file=.env src/scripts/migrate.mjs --reset",
+    "seed": "node --env-file=.env src/scripts/seed.mjs",
+    "verify": "node --env-file=.env src/scripts/verify.mjs",
+    "setup": "node --env-file=.env src/scripts/migrate.mjs && node --env-file=.env src/scripts/seed.mjs && node --env-file=.env src/scripts/verify.mjs"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.0"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}

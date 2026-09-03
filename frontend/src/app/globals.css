@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+/*
+ * Colour tokens are injected at runtime from the active theme
+ * (see lib/themes.ts + components/ThemeStyle.tsx). The values here are the
+ * defaults for the Obsidian & Gold theme so the very first paint is correct
+ * even before the injected stylesheet is parsed — no flash of unstyled theme.
+ */
+@theme {
+  --color-ink-950: #0a0a0a;
+  --color-ink-900: #141414;
+  --color-ink-850: #171717;
+  --color-ink-800: #1f1f1f;
+  --color-ink-750: #2a2a2a;
+  --color-ink-700: #373737;
+  --color-ink-600: #5c5c5c;
+  --color-ink-500: #6e6e6e;
+  --color-ink-400: #888888;
+  --color-ink-300: #9e9e9e;
+  --color-ink-200: #b6b6b6;
+  --color-ink-100: #e7e7e7;
+  --color-ink-50:  #f5f5f5;
+
+  --color-saffron-100: #f7efdc;
+  --color-saffron-200: #efdcb0;
+  --color-saffron-300: #e4c67f;
+  --color-saffron-400: #dbc058;
+  --color-saffron-500: #d4af37;
+  --color-saffron-600: #bb9a2f;
+  --color-saffron-700: #927825;
+  --color-saffron-on: #0a0a0a;
+
+  --color-brand2-500: #d4af37;
+  --color-brand2-400: #dbc058;
+
+  --font-display: var(--font-serif), ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-sans-next), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --radius-lux: 4px;
+  --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+/* Light themes must not inherit a dark form-control / scrollbar scheme. */
+:root[data-theme-mode="light"] {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-ink-200 font-sans antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-saffron-500);
+  color: var(--color-saffron-on);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-ink-950); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-750);
+  border-radius: 99px;
+  border: 2px solid var(--color-ink-950);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-saffron-600); }
+
+/* Range inputs (price slider) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2px;
+  background: var(--color-ink-750);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: var(--color-saffron-500);
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-lux);
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin { animation: spin 0.7s linear infinite; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Luxury component primitives
+   Restraint is the point: hairline borders, generous space, no
+   heavy shadows, and a single accent used sparingly.
+   ───────────────────────────────────────────────────────────── */
+
+@utility eyebrow {
+  @apply text-[11px] uppercase tracking-[0.28em] text-saffron-500 font-medium;
+}
+
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  line-height: 1.08;
+  @apply text-ink-50;
+}
+
+/* Hairline-ruled surface. Uses colour-mix so it adapts to any theme. */
+@utility lux-surface {
+  background: var(--color-ink-900);
+  border: 1px solid color-mix(in oklab, var(--color-ink-50) 10%, transparent);
+}
+
+@utility lux-card {
+  @apply relative overflow-hidden transition-[transform,border-color,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)];
+  background: var(--color-ink-900);
+  border: 1px solid color-mix(in oklab, var(--color-ink-50) 9%, transparent);
+  border-radius: var(--radius-lux);
+}
+
+@utility lux-card-hover {
+  border-color: color-mix(in oklab, var(--color-saffron-500) 45%, transparent);
+  transform: translateY(-4px);
+}
+
+/* Primary action — solid accent, square, letterspaced. */
+@utility lux-btn {
+  @apply relative inline-flex items-center justify-center gap-2.5 overflow-hidden px-7 py-3.5 text-[12px] font-medium uppercase tracking-[0.18em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40;
+  background: var(--color-saffron-500);
+  color: var(--color-saffron-on);
+  border-radius: var(--radius-lux);
+}
+
+/* Secondary action — hairline outline, fills on hover. */
+@utility lux-btn-ghost {
+  @apply relative inline-flex items-center justify-center gap-2.5 px-7 py-3.5 text-[12px] font-medium uppercase tracking-[0.18em] transition-all duration-300;
+  border: 1px solid color-mix(in oklab, var(--color-ink-50) 22%, transparent);
+  color: var(--color-ink-100);
+  border-radius: var(--radius-lux);
+}
+
+/* Quiet text link with an animated rule beneath. */
+@utility lux-link {
+  @apply relative inline-block text-[12px] uppercase tracking-[0.18em] text-ink-300 transition-colors duration-300;
+}
+
+/* Editorial rule used to separate sections. */
+@utility lux-rule {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--color-ink-50) 16%, transparent) 20%,
+    color-mix(in oklab, var(--color-ink-50) 16%, transparent) 80%,
+    transparent
+  );
+}
+
+@utility grain {
+  position: relative;
+}
+
+/* Reduced motion: kill decorative animation, keep the page usable. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js build / cache
+.next/
+.next-admin/
+.cache/
+out/
+dist/
+build/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# Env files — contain Turso / Insforge / admin secrets. NEVER commit.
+.env
+.env.local
+.env.development
+.env.production
+.env*.local
+
+# Logs & OS
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# Misc
+coverage/
+.turbo/
+.idea/
+.vscode/
