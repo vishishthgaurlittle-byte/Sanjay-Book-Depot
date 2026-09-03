@@ -98,8 +98,30 @@ export async function logout() {
   saveSession(null, null);
 }
 
+/**
+ * Customer Google Sign-In (login + signup). Sends the Google ID token to our
+ * server, which verifies it and returns a signed session we store locally.
+ */
+export async function loginWithGoogle(credential: string) {
+  const res = await fetch('/api/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  });
+  const data = (await res.json().catch(() => null)) as { token?: string; user?: SessionUser; error?: string } | null;
+  if (!res.ok || !data?.token) {
+    return { ok: false as const, error: data?.error ?? 'Google sign-in failed.' };
+  }
+  saveSession(data.token, data.user ?? null);
+  return { ok: true as const, user: data.user ?? null };
+}
+
 export async function currentUser() {
-  if (!getToken()) return null;
+  const token = getToken();
+  if (!token) return null;
+  // Google sessions are self-contained (signed by our server) — Insforge has
+  // never seen them, so trust the locally stored user instead of re-checking.
+  if (token.startsWith('sbdc.')) return getUser();
   const res = await authFetch<{ user?: SessionUser }>('sessions/current');
   if (!res.ok || !res.data) {
     saveSession(null, null);

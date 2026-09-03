@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Field, inputBorderStyle, inputClass } from '@/components/Field';
+import GoogleAuthButton from '@/components/GoogleAuthButton';
 import { register } from '@/lib/auth-client';
 
 const schema = z
@@ -56,7 +57,17 @@ export default function RegisterPage() {
           Track orders, save addresses and check out faster.
         </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-14 space-y-9">
+        <div className="mt-10">
+          <GoogleAuthButton redirectTo="/" />
+        </div>
+
+        <div className="my-8 flex items-center gap-4 text-[10px] uppercase tracking-[0.2em] text-ink-600">
+          <span className="h-px flex-1" style={{ background: 'color-mix(in oklab, var(--color-ink-50) 12%, transparent)' }} />
+          or
+          <span className="h-px flex-1" style={{ background: 'color-mix(in oklab, var(--color-ink-50) 12%, transparent)' }} />
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-9">
           <Field label="Full name" error={errors.name?.message}>
             <input
               autoComplete="name"
