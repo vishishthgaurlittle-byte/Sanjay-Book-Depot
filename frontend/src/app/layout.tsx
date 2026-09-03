@@ -38,22 +38,34 @@ const LOGO_URL = `${SITE_URL}/icons/icon-512.png`;
 
 const ORGANIZATION_LD = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
+  '@type': ['Organization', 'Store'],
   '@id': `${SITE_URL}/#organization`,
   name: 'Sanjay Book Depot',
-  alternateName: ['SBD', 'Sanjay Books'],
+  alternateName: [
+    'SBD',
+    'Sanjay Books',
+    'Sanjay Book Depot Raebareli',
+    'Sany Book Raebareli',
+    'Sanjay Book Depot Raebarelli',
+    'Book Depot Raebareli',
+    'Sanjay Stationery Raebareli',
+  ],
   url: `${SITE_URL}/`,
   logo: LOGO_URL,
   image: LOGO_URL,
   description:
-    'Premium stationery retailer — notebooks, art supplies, office essentials and writing instruments from 52 of India’s finest brands, shipped from Lucknow across India.',
-  foundingDate: '1994',
+    'Sanjay Book Depot — premium stationery shop near Ganesh Hotel, Raebareli (Uttar Pradesh). Notebooks, art supplies, office essentials and writing instruments from 52 of India’s finest brands, delivered across India.',
+  foundingDate: '1998',
+  slogan: 'Premium stationery, Raebareli',
   address: {
     '@type': 'PostalAddress',
-    addressLocality: 'Lucknow',
+    streetAddress: 'Near Ganesh Hotel',
+    addressLocality: 'Raebareli',
     addressRegion: 'Uttar Pradesh',
+    postalCode: '229001',
     addressCountry: 'IN',
   },
+  areaServed: ['Raebareli', 'Uttar Pradesh', 'India'],
   contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', areaServed: 'IN' },
 };
 
@@ -64,9 +76,18 @@ export const metadata: Metadata = {
     template: '%s — Sanjay Book Depot',
   },
   description:
-    '500+ curated stationery products from 52 of India\u2019s finest brands. ' +
-    'Notebooks, art supplies, office essentials and writing instruments \u2014 shipped from Lucknow across India.',
+    'Sanjay Book Depot, Raebareli (near Ganesh Hotel) \u2014 500+ curated stationery products from ' +
+    '52 of India\u2019s finest brands. Notebooks, art supplies, office essentials and writing instruments, ' +
+    'delivered across India.',
   keywords: [
+    'Sanjay Book Depot',
+    'sanjay book depot raebareli',
+    'sany book raebareli',
+    'sanjay book depot raebarelli',
+    'book depot raebareli',
+    'stationery shop raebareli',
+    'raebareli stationery',
+    'notebooks raebareli',
     'stationery India',
     'buy notebooks online',
     'art supplies',
@@ -74,7 +95,6 @@ export const metadata: Metadata = {
     'Camlin',
     'Classmate',
     'Cello',
-    'Sanjay Book Depot',
   ],
   manifest: '/manifest.webmanifest',
   applicationName: 'Sanjay Book Depot',

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'About us',
   description:
-    'Sanjay Book Depot — a Lucknow stationery house serving students, studios and offices across India since 1998.',
+    'Sanjay Book Depot — a Raebareli stationery house serving students, studios and offices across India since 1998.',
 };
 
 const PROMISES = [
@@ -35,7 +35,7 @@ export default async function AboutPage() {
   const years = new Date().getFullYear() - 1998;
 
   const facts: [string, string][] = [
-    ['1998', 'Founded in Lucknow'],
+    ['1998', 'Founded in Raebareli'],
     [`${brands.length}`, 'Indian brands stocked'],
     [`${stats?.products ?? 0}`, 'Products listed'],
     [`${categories.length}`, 'Departments'],
@@ -48,7 +48,7 @@ export default async function AboutPage() {
         className="max-w-3xl border-b pb-14"
         style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 10%, transparent)' }}
       >
-        <p className="eyebrow">Lucknow · Est. 1998</p>
+        <p className="eyebrow">Raebareli · Est. 1998</p>
         <h1 className="display mt-5 text-[clamp(2.4rem,6vw,4.5rem)]">
           A counter, a ledger,
           <br />
@@ -60,7 +60,7 @@ export default async function AboutPage() {
       <div className="mt-16 grid gap-14 lg:grid-cols-[1fr_360px]">
         <div className="max-w-2xl space-y-7 text-[15px] leading-[1.95] text-ink-300">
           <p>
-            Sanjay Book Depot began in 1998 as a single shop counter in Lucknow, selling
+            Sanjay Book Depot began in 1998 as a single shop counter in Raebareli, selling
             notebooks to the school run across the road. {years === 28 ? 'Twenty-eight' : `${years}`}{' '}
             years later we still do the same thing — we just do it for customers all over India.
           </p>

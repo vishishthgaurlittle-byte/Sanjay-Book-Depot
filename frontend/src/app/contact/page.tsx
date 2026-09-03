@@ -11,7 +11,7 @@ const CHANNELS: [string, string, string, string | null][] = [
   ['Email', 'support@sanjaybookdepot.in', 'Orders, returns and invoices', 'mailto:support@sanjaybookdepot.in'],
   ['Phone', '+91 522 123 4567', 'Mon–Sat, 10am–7pm IST', 'tel:+915221234567'],
   ['Bulk & corporate', 'bulk@sanjaybookdepot.in', 'Institutional and reseller pricing', 'mailto:bulk@sanjaybookdepot.in'],
-  ['The shop', 'Hazratganj, Lucknow 226001', 'Uttar Pradesh, India', null],
+  ['The shop', 'Near Ganesh Hotel, Raebareli 229001', 'Uttar Pradesh, India', null],
 ];
 
 const HAIRLINE = '1px solid color-mix(in oklab, var(--color-ink-50) 10%, transparent)';
@@ -93,7 +93,7 @@ export default function ContactPage() {
             <div className="text-center">
               <span className="display block text-[64px] leading-none text-saffron-500/80">LKO</span>
               <span className="mt-3 block text-[10px] uppercase tracking-[0.3em] text-ink-400">
-                Hazratganj · Lucknow
+                Near Ganesh Hotel · Raebareli
               </span>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function ContactPage() {
           <address className="mt-8 not-italic text-[14px] leading-[1.9] text-ink-400">
             Sanjay Book Depot
             <br />
-            Hazratganj, Lucknow 226001
+            Near Ganesh Hotel, Raebareli 229001
             <br />
             Uttar Pradesh, India
             <br />

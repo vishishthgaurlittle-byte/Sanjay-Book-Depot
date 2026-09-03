@@ -281,7 +281,7 @@ export default function CartPage() {
           </Link>
 
           <p className="mt-8 text-[10px] leading-relaxed text-ink-600">
-            Taxes calculated at checkout. Dispatched from Lucknow within 24 hours.
+            Taxes calculated at checkout. Dispatched from Raebareli (near Ganesh Hotel) within 24 hours.
           </p>
         </aside>
       </div>
