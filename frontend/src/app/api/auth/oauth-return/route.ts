@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { signCustomerSession } from '@/lib/customer-session';
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -40,7 +42,21 @@ export async function GET(req: Request) {
       return fail(msg);
     }
 
-    const payload = Buffer.from(JSON.stringify(json), 'utf8').toString('base64url');
+    // Insforge authenticated the user via Google — mint our own stable 30-day
+    // session so login persists and is verifiable server-side for orders.
+    const d = json as { user?: any; session?: { user?: any } };
+    const u = d.user ?? d.session?.user ?? null;
+    const email: string | undefined = u?.email;
+    if (!email) return fail('Could not read your account email.');
+    const user = {
+      id: String(u.id ?? email),
+      email,
+      name: (u.name || u.full_name || u.user_metadata?.full_name || u.user_metadata?.name || null) as string | null,
+    };
+    const payload = Buffer.from(
+      JSON.stringify({ token: signCustomerSession(user), user }),
+      'utf8',
+    ).toString('base64url');
     const done = NextResponse.redirect(new URL(`/auth/done#s=${payload}`, url.origin));
     done.cookies.set('sbd_pkce', '', { path: '/', maxAge: 0 });
     return done;

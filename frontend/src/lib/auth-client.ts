@@ -28,6 +28,11 @@ export function getRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_KEY);
 }
 
+/** Store a ready-made session token + user (used after server-side OAuth exchange). */
+export function applySession(token: string | null, user: SessionUser | null) {
+  saveSession(token, user);
+}
+
 /** Persist a full Insforge session (access + refresh + user) so login survives until logout. */
 export function rememberSession(data: unknown, email?: string, name?: string) {
   if (typeof window === 'undefined') return { token: null, user: null };

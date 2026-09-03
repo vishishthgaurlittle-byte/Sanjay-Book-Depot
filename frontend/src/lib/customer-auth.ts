@@ -2,9 +2,15 @@
  * Verify a customer's Insforge session token (the one stored client-side after
  * Google/email login) and return the user. Used by the orders/checkout APIs.
  */
+import { verifyCustomerSession } from './customer-session';
+
 export type CustomerIdentity = { id: string; email: string; name: string | null };
 
 export async function verifyCustomer(token?: string | null): Promise<CustomerIdentity | null> {
+  // Stable self-signed session (minted after Insforge/Google OAuth) — verify locally.
+  const local = verifyCustomerSession(token);
+  if (local) return local;
+
   const base = process.env.INF_BASE_URL;
   if (!token || !base) return null;
   try {

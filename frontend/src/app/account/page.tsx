@@ -35,6 +35,7 @@ export default function AccountPage() {
   const [section, setSection] = useState<Section>('profile');
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -43,6 +44,7 @@ export default function AccountPage() {
     const h = { Authorization: `Bearer ${token}` };
     fetch('/api/orders', { headers: h }).then((r) => r.json()).then((j) => setOrders(j.orders || [])).catch(() => {});
     fetch('/api/addresses', { headers: h }).then((r) => r.json()).then((j) => setAddresses(j.addresses || [])).catch(() => {});
+    fetch('/api/account/is-admin', { headers: h }).then((r) => r.json()).then((j) => setIsAdmin(!!j.isAdmin)).catch(() => {});
   }, [ready]);
 
   useEffect(() => {
@@ -62,6 +64,19 @@ export default function AccountPage() {
     await logout();
     router.replace('/');
     router.refresh();
+  }
+
+  async function openAdmin() {
+    const token = getToken();
+    if (!token) return router.push('/admin/login');
+    const res = await fetch('/api/account/admin-session', { headers: { Authorization: `Bearer ${token}` } });
+    const j = (await res.json().catch(() => null)) as { token?: string } | null;
+    if (res.ok && j?.token) {
+      localStorage.setItem('sbd-admin-token', j.token);
+      router.push('/admin');
+    } else {
+      router.push('/admin/login');
+    }
   }
 
   if (!ready || !user) {
@@ -104,6 +119,16 @@ export default function AccountPage() {
                 {n.label}
               </button>
             ))}
+            {isAdmin && (
+              <button
+                onClick={openAdmin}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-saffron-500 transition-colors"
+                style={{ backgroundColor: 'color-mix(in oklab, var(--color-saffron-500) 10%, transparent)' }}
+              >
+                <Icon d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
+                Admin panel
+              </button>
+            )}
             <button onClick={signOut} className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] text-ink-400 transition-colors hover:text-ink-100">
               <Icon d="M15 12H4m0 0l4-4m-4 4l4 4M10 4h7a2 2 0 012 2v12a2 2 0 01-2 2h-7" />
               Sign out

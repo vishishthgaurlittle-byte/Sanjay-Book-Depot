@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { rememberSession } from '@/lib/auth-client';
+import { applySession, type SessionUser } from '@/lib/auth-client';
 
 /** Decode a base64url UTF-8 string in the browser (no Buffer). */
 function b64urlDecode(s: string): string {
@@ -28,8 +28,8 @@ export default function AuthDonePage() {
     const s = params.get('s');
     if (s) {
       try {
-        const json = JSON.parse(b64urlDecode(s));
-        rememberSession(json);
+        const data = JSON.parse(b64urlDecode(s)) as { token?: string; user?: SessionUser };
+        if (data.token) applySession(data.token, data.user ?? null);
       } catch {
         /* ignore */
       }
