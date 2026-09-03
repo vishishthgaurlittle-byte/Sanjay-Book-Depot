@@ -8,6 +8,7 @@ import ProductCard, { Stars } from '@/components/ProductCard';
 import { money } from '@/lib/format';
 import { getProductBySlug, getRelatedProducts } from '@/lib/queries';
 import { shapeFromCategory } from '@/lib/shapes';
+import { SITE_URL, abs } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +35,40 @@ export default async function ProductPage({ params }: Props) {
   const related = await getRelatedProducts(product.id, product.category_id, 4);
   const specs = Object.entries(product.specifications);
 
+  // Product structured data → rich snippet (price, rating, availability) in Google.
+  const images = (product.images.length ? product.images.map((i) => i.image_url) : [product.primary_image])
+    .filter((u): u is string => Boolean(u))
+    .map((u) => abs(u));
+  const productLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    '@id': `${SITE_URL}/product/${product.slug}#product`,
+    name: product.name,
+    sku: product.sku,
+    image: images,
+    description: product.short_description || product.description || product.name,
+    brand: { '@type': 'Brand', name: product.brand_name },
+    offers: {
+      '@type': 'Offer',
+      url: `${SITE_URL}/product/${product.slug}`,
+      priceCurrency: 'INR',
+      price: Number(product.selling_price),
+      availability: product.stock_quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: { '@type': 'Organization', name: 'Sanjay Book Depot', url: `${SITE_URL}/` },
+    },
+  };
+  if (Number(product.rating_count) > 0) {
+    productLd.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: Number(product.rating_average),
+      reviewCount: Number(product.rating_count),
+    };
+  }
+
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }} />
       {/* ── Breadcrumbs ───────────────────────────────── */}
       <nav className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-ink-500">
         {product.breadcrumbs.map((b, i) => (
