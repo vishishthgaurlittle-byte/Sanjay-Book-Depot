@@ -360,6 +360,48 @@ export const MIGRATIONS = [
        )`,
     ],
   },
+
+  {
+    id: 6,
+    name: 'khata ledger',
+    statements: [
+      // Khata book: parties (customers/suppliers) and their credit/debit entries.
+      // balance = opening_balance + SUM(credit) - SUM(debit)
+      //   credit = "You Gave" (a sale on credit → they owe you more)
+      //   debit  = "You Got"  (a payment received → they owe you less)
+      `CREATE TABLE IF NOT EXISTS khata_parties (
+         id TEXT PRIMARY KEY,
+         name TEXT NOT NULL,
+         phone TEXT,
+         email TEXT,
+         address TEXT,
+         notes TEXT,
+         opening_balance REAL NOT NULL DEFAULT 0,
+         is_active INTEGER NOT NULL DEFAULT 1,
+         created_at TEXT NOT NULL ${now},
+         updated_at TEXT NOT NULL ${now}
+       )`,
+      `CREATE TABLE IF NOT EXISTS khata_transactions (
+         id TEXT PRIMARY KEY,
+         party_id TEXT NOT NULL REFERENCES khata_parties(id) ON DELETE CASCADE,
+         type TEXT NOT NULL CHECK (type IN ('credit','debit')),
+         amount REAL NOT NULL CHECK (amount > 0),
+         note TEXT,
+         reference TEXT,
+         entry_date TEXT NOT NULL,
+         created_at TEXT NOT NULL ${now},
+         updated_at TEXT NOT NULL ${now}
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_khata_tx_party
+         ON khata_transactions(party_id, entry_date)`,
+      `CREATE TRIGGER IF NOT EXISTS trg_khata_parties_updated_at
+         AFTER UPDATE ON khata_parties FOR EACH ROW
+         BEGIN UPDATE khata_parties SET updated_at = datetime('now') WHERE id = NEW.id; END`,
+      `CREATE TRIGGER IF NOT EXISTS trg_khata_transactions_updated_at
+         AFTER UPDATE ON khata_transactions FOR EACH ROW
+         BEGIN UPDATE khata_transactions SET updated_at = datetime('now') WHERE id = NEW.id; END`,
+    ],
+  },
 ];
 
 /** The 12 tables the plan calls for (excludes bookkeeping + FTS shadow table). */

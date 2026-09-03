@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { href: '/admin/settings', label: 'Appearance' },
   { href: '/admin/products', label: 'Products' },
+  { href: '/admin/khata', label: 'Khata' },
 ];
 
 /** Shared tab bar across the admin panel. */

@@ -1,9 +1,49 @@
 import 'server-only';
 
+import crypto from 'node:crypto';
+
 import { NextResponse } from 'next/server';
 
 import { one } from '@/lib/db';
 import { INF_BASE_URL } from '@/lib/insforge';
+
+/* ── Google-signed admin sessions ──────────────────────────────────────
+ * After /api/admin/auth/google verifies a Google ID token and confirms the
+ * email is in admin_users, it mints this short-lived signed token. The browser
+ * stores it and sends it as the bearer, so the existing admin fetches work
+ * unchanged. Signed with ADMIN_SESSION_SECRET (falls back to ADMIN_TOKEN).
+ */
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+function sessionSecret(): string {
+  return process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_TOKEN || '';
+}
+
+/** Mint a signed session token for a verified admin email. */
+export function signSession(email: string): string {
+  const payload = Buffer.from(
+    JSON.stringify({ email: email.toLowerCase(), exp: Date.now() + SESSION_TTL_MS }),
+  ).toString('base64url');
+  const sig = crypto.createHmac('sha256', sessionSecret()).update(payload).digest('base64url');
+  return `sbdg.${payload}.${sig}`;
+}
+
+/** Verify a signed session token; returns the admin email or null. */
+function verifySession(token: string): string | null {
+  if (!token.startsWith('sbdg.')) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [, payload, sig] = parts;
+  const expect = crypto.createHmac('sha256', sessionSecret()).update(payload).digest('base64url');
+  // constant-time compare
+  if (sig.length !== expect.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expect))) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString()) as { email?: string; exp?: number };
+    if (!data.email || !data.exp || Date.now() > data.exp) return null;
+    return String(data.email).toLowerCase();
+  } catch {
+    return null;
+  }
+}
 
 interface SessionUser {
   id: string;
@@ -73,6 +113,26 @@ export async function requireAdmin(request: Request): Promise<AdminResult> {
         response: NextResponse.json(
           { error: 'ADMIN_TOKEN accepted but no active admin_users row exists' },
           { status: 500 },
+        ),
+      };
+    }
+    return { ok: true, admin, via: 'token' };
+  }
+
+  // ── Path C: Google-signed session (from /api/admin/auth/google) ──────
+  const googleEmail = verifySession(token);
+  if (googleEmail) {
+    const admin = await one<AdminRow>(
+      `SELECT id, email, full_name, role FROM admin_users
+        WHERE email = ? AND is_active = 1`,
+      [googleEmail],
+    );
+    if (!admin) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: 'This Google account is not authorised for the admin panel' },
+          { status: 403 },
         ),
       };
     }
