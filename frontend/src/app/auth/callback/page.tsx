@@ -23,10 +23,18 @@ export default function AuthCallbackPage() {
     ran.current = true;
 
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const next = params.get('next') || '/';
+    // Insforge appends ?insforge_code=... on success, or ?error=... on failure.
+    const code = params.get('insforge_code') ?? params.get('code');
+    const oauthError = params.get('error') ?? params.get('error_description');
+    const next = localStorage.getItem('sbd.oauth.next') || '/';
     const verifier = localStorage.getItem(VERIFIER_KEY);
 
+    if (oauthError) {
+      localStorage.removeItem(VERIFIER_KEY);
+      localStorage.removeItem('sbd.oauth.next');
+      setError(`Google sign-in was cancelled or failed: ${oauthError}`);
+      return;
+    }
     if (!code) {
       setError('No authorization code returned. Please try signing in again.');
       return;
@@ -35,6 +43,7 @@ export default function AuthCallbackPage() {
     (async () => {
       const { data, error: err } = await insforgeBrowser().auth.exchangeOAuthCode(code, verifier ?? undefined);
       localStorage.removeItem(VERIFIER_KEY);
+      localStorage.removeItem('sbd.oauth.next');
       if (err || !data) {
         setError(err?.message ?? 'Could not complete Google sign-in.');
         return;

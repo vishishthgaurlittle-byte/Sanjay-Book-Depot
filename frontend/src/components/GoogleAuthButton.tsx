@@ -35,7 +35,7 @@ export default function GoogleAuthButton({ redirectTo = '/' }: { redirectTo?: st
     setError(null);
     try {
       const { data, error: err } = await insforgeBrowser().auth.signInWithOAuth('google', {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         skipBrowserRedirect: true,
       });
       if (err || !data?.url) {
@@ -44,6 +44,7 @@ export default function GoogleAuthButton({ redirectTo = '/' }: { redirectTo?: st
         return;
       }
       if (data.codeVerifier) localStorage.setItem(VERIFIER_KEY, data.codeVerifier);
+      localStorage.setItem('sbd.oauth.next', redirectTo);
       window.location.href = data.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Google sign-in failed.');
