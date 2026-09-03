@@ -1,13 +1,14 @@
 # Deployment Guide — Sanjay Book Depot
 
-The Next.js app lives at the **repository root** (`package.json`, `src/`, `next.config.ts`).
+The Next.js app lives in **`frontend/`** (`package.json`, `src/`, `next.config.ts`).
 The `backend/` folder holds Turso migration/seed scripts and is **not** deployed.
 
 ## Deploy on Vercel
 
 1. **Import** — vercel.com/new → select the repo `vishishthgaurlittle-byte/Sanjay-Book-Depot`.
-2. **Framework** — auto-detected as **Next.js**. Build `next build`, output `.next`.
-   - **Root Directory: leave EMPTY** (the app is at the repo root).
+2. **Root Directory: set it to `frontend`** (Settings → General → Root Directory).
+   This is required — the app is in a subfolder, so Vercel must build from `frontend/`.
+   Framework then auto-detects as **Next.js** (build `next build`, output `.next`).
 3. **Environment Variables** — add these *before* the first deploy:
 
    | Key | Notes |
@@ -37,8 +38,9 @@ The `backend/` folder holds Turso migration/seed scripts and is **not** deployed
 ## Local development
 
 ```bash
+cd frontend
 npm install
-npm run dev          # http://localhost:3000  (needs .env.local)
+npm run dev          # http://localhost:3000  (needs frontend/.env.local)
 ```
 
 ## Database (Turso) — one-time / schema changes
@@ -59,8 +61,8 @@ npm run seed         # optional: seed catalogue
 
 ## Troubleshooting
 
-- **404 NOT_FOUND on every route** → Root Directory is wrong, or `package.json` isn't at the
-  Root Directory. Keep Root Directory empty so it resolves to the repo root.
-- **"No Next.js version detected"** → same cause: Vercel can't find `package.json` with `next`
-  in the Root Directory.
+- **404 NOT_FOUND on every route** → Root Directory is not set to `frontend`. Vercel built from
+  the repo root, which has no `package.json`, so it produced no routes.
+- **"No Next.js version detected"** → same cause: set Root Directory to `frontend` so Vercel
+  finds `frontend/package.json` (which has `next`).
 - **Homepage 500s after deploy** → `TURSO_URL` / `TURSO_TOKEN` missing. Add them and redeploy.
