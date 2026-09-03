@@ -116,6 +116,18 @@ export async function loginWithGoogle(credential: string) {
   return { ok: true as const, user: data.user ?? null };
 }
 
+/**
+ * Store an Insforge session returned by the OAuth code exchange
+ * (exchangeOAuthCode). Same shape as password login, so the rest of the app
+ * treats a Google sign-in identically.
+ */
+export function saveOAuthSession(data: unknown) {
+  const token = extractToken(data);
+  const user = extractUser(data);
+  if (token) saveSession(token, user);
+  return { token, user };
+}
+
 export async function currentUser() {
   const token = getToken();
   if (!token) return null;

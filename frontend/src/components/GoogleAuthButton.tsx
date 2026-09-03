@@ -1,24 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-import { loginWithGoogle } from '@/lib/auth-client';
+import { insforgeBrowser } from '@/lib/insforge-browser';
 
-const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (cfg: { client_id: string; callback: (r: { credential: string }) => void }) => void;
-          renderButton: (el: HTMLElement, opts: Record<string, unknown>) => void;
-        };
-      };
-    };
-  }
-}
+const VERIFIER_KEY = 'sbd.oauth.verifier';
 
 /** The official Google "G" mark. */
 function GoogleG() {
@@ -33,91 +19,51 @@ function GoogleG() {
 }
 
 /**
- * "Continue with Google" — customer login + signup.
- * Always renders a visible Google button. When NEXT_PUBLIC_GOOGLE_CLIENT_ID is
- * set it runs the real Google Identity Services flow; otherwise it explains the
- * one missing config value instead of disappearing.
+ * "Continue with Google" — customer login + signup via Insforge OAuth.
+ *
+ * Insforge runs the Google consent using its own shared Google client, so no
+ * Google Cloud credentials are needed here. We get the auth URL + PKCE verifier
+ * from the SDK, stash the verifier, and redirect to Google. /auth/callback
+ * finishes the exchange and stores the Insforge session.
  */
 export default function GoogleAuthButton({ redirectTo = '/' }: { redirectTo?: string }) {
-  const router = useRouter();
-  const ref = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [needsConfig, setNeedsConfig] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onCredential = useCallback(
-    async (credential: string) => {
-      setBusy(true);
-      setError(null);
-      const res = await loginWithGoogle(credential);
-      if (!res.ok) {
-        setError(res.error);
+  async function start() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { data, error: err } = await insforgeBrowser().auth.signInWithOAuth('google', {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+        skipBrowserRedirect: true,
+      });
+      if (err || !data?.url) {
+        setError(err?.message ?? 'Could not start Google sign-in.');
         setBusy(false);
         return;
       }
-      router.push(redirectTo);
-      router.refresh();
-    },
-    [router, redirectTo],
-  );
-
-  useEffect(() => {
-    if (!CLIENT_ID) return;
-    const init = () => {
-      window.google?.accounts.id.initialize({ client_id: CLIENT_ID, callback: (r) => onCredential(r.credential) });
-      if (ref.current) {
-        ref.current.innerHTML = '';
-        window.google?.accounts.id.renderButton(ref.current, {
-          theme: 'outline',
-          size: 'large',
-          width: 340,
-          text: 'continue_with',
-          shape: 'rectangular',
-        });
-      }
-    };
-    if (document.getElementById('gsi-client')) {
-      init();
-      return;
+      if (data.codeVerifier) localStorage.setItem(VERIFIER_KEY, data.codeVerifier);
+      window.location.href = data.url;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Google sign-in failed.');
+      setBusy(false);
     }
-    const s = document.createElement('script');
-    s.id = 'gsi-client';
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.async = true;
-    s.onload = init;
-    document.body.appendChild(s);
-  }, [onCredential]);
-
-  // Configured → the real Google button.
-  if (CLIENT_ID) {
-    return (
-      <div>
-        <div ref={ref} className="flex justify-center" />
-        {busy && <p className="mt-3 text-center text-[11px] uppercase tracking-[0.2em] text-ink-500">Signing you in…</p>}
-        {error && <p className="mt-3 text-center text-[12px] text-saffron-600">{error}</p>}
-      </div>
-    );
   }
 
-  // Not configured yet → still show the button, explain on click.
   return (
     <div className="flex flex-col items-center">
       <button
         type="button"
-        onClick={() => setNeedsConfig(true)}
-        className="inline-flex items-center justify-center gap-3 rounded-[var(--radius-lux)] border px-6 py-3 text-[13px] font-medium transition-colors"
+        onClick={start}
+        disabled={busy}
+        className="inline-flex items-center justify-center gap-3 rounded-[var(--radius-lux)] border px-6 py-3 text-[13px] font-medium transition-colors disabled:opacity-50"
         style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 22%, transparent)', color: 'var(--color-ink-100)' }}
       >
         <GoogleG />
-        Continue with Google
+        {busy ? 'Redirecting…' : 'Continue with Google'}
       </button>
-      {needsConfig && (
-        <p className="mt-3 max-w-sm text-center text-[12px] leading-relaxed text-ink-500">
-          Google sign-in is built and ready — it just needs a Google OAuth Client ID.
-          Set <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> (and <code>GOOGLE_CLIENT_ID</code>) in the
-          Vercel environment variables, then redeploy.
-        </p>
-      )}
+      {error && <p className="mt-3 max-w-sm text-center text-[12px] leading-relaxed text-saffron-600">{error}</p>}
     </div>
   );
 }
