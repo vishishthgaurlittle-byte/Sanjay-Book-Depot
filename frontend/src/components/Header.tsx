@@ -124,7 +124,7 @@ export default function Header() {
 
           <div className="ml-auto flex items-center gap-1 sm:gap-2 xl:ml-0">
             <Link
-              href="/login"
+              href="/account"
               className="hidden p-2.5 text-ink-300 transition-colors hover:text-ink-50 sm:block"
               aria-label="Account"
             >
@@ -180,7 +180,7 @@ export default function Header() {
               </Link>
             ))}
             <Link
-              href="/login"
+              href="/account"
               className="block py-2.5 text-[12px] uppercase tracking-[0.16em] text-saffron-500"
             >
               Account

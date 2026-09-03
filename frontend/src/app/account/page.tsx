@@ -1,0 +1,163 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { currentUser, logout, type SessionUser } from '@/lib/auth-client';
+
+type Section = 'profile' | 'orders' | 'addresses' | 'wishlist' | 'security';
+
+const NAV: { id: Section; label: string; icon: string }[] = [
+  { id: 'profile', label: 'Profile', icon: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c1.5-4 4.5-6 8-6s6.5 2 8 6' },
+  { id: 'orders', label: 'Your Orders', icon: 'M3 7h18M3 7l2 12h14l2-12M3 7l1-3h16l1 3M9 11h6' },
+  { id: 'addresses', label: 'Addresses', icon: 'M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11zM12 10a2 2 0 100-4 2 2 0 000 4z' },
+  { id: 'wishlist', label: 'Wishlist', icon: 'M12 20s-7-4.6-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.4-7 10-7 10z' },
+  { id: 'security', label: 'Security', icon: 'M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z' },
+];
+
+function Icon({ d }: { d: string }) {
+  return (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+export default function AccountPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [ready, setReady] = useState(false);
+  const [section, setSection] = useState<Section>('profile');
+
+  useEffect(() => {
+    currentUser()
+      .then((u) => {
+        if (!u) {
+          router.replace('/login?next=/account');
+          return;
+        }
+        setUser(u);
+        setReady(true);
+      })
+      .catch(() => router.replace('/login?next=/account'));
+  }, [router]);
+
+  async function signOut() {
+    await logout();
+    router.replace('/');
+    router.refresh();
+  }
+
+  if (!ready || !user) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md items-center justify-center">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-ink-500">Loading your account…</p>
+      </div>
+    );
+  }
+
+  const initial = (user.name || user.email || 'S').trim().charAt(0).toUpperCase();
+
+  return (
+    <div className="mx-auto max-w-[1200px] px-4 py-10 sm:px-6 lg:px-10">
+      <p className="lux-eyebrow">My Account</p>
+      <h1 className="display mt-3 text-[clamp(2rem,5vw,3rem)]">Hello, {user.name?.split(' ')[0] || 'there'}</h1>
+
+      <div className="mt-10 grid gap-8 lg:grid-cols-[248px_1fr]">
+        {/* Sidebar */}
+        <aside className="h-fit rounded-[var(--radius-lux)] border p-2" style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 12%, transparent)' }}>
+          <div className="mb-2 flex items-center gap-3 px-3 py-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-saffron-500 text-[16px] font-semibold text-saffron-on">{initial}</span>
+            <span className="min-w-0">
+              <span className="block truncate text-[13px] font-medium">{user.name || 'Customer'}</span>
+              <span className="block truncate text-[11px] text-ink-500">{user.email}</span>
+            </span>
+          </div>
+          <nav className="flex flex-col">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => setSection(n.id)}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors"
+                style={{
+                  color: section === n.id ? 'var(--color-saffron-500)' : 'var(--color-ink-200)',
+                  backgroundColor: section === n.id ? 'color-mix(in oklab, var(--color-saffron-500) 12%, transparent)' : 'transparent',
+                }}
+              >
+                <Icon d={n.icon} />
+                {n.label}
+              </button>
+            ))}
+            <button onClick={signOut} className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] text-ink-400 transition-colors hover:text-ink-100">
+              <Icon d="M15 12H4m0 0l4-4m-4 4l4 4M10 4h7a2 2 0 012 2v12a2 2 0 01-2 2h-7" />
+              Sign out
+            </button>
+          </nav>
+        </aside>
+
+        {/* Content */}
+        <main className="rounded-[var(--radius-lux)] border p-6 sm:p-8" style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 12%, transparent)' }}>
+          {section === 'profile' && (
+            <div>
+              <h2 className="display text-[22px]">Profile</h2>
+              <dl className="mt-6 grid gap-5 sm:grid-cols-2">
+                <div>
+                  <dt className="text-[10px] uppercase tracking-[0.16em] text-ink-500">Full name</dt>
+                  <dd className="mt-1.5 text-[15px]">{user.name || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] uppercase tracking-[0.16em] text-ink-500">Email</dt>
+                  <dd className="mt-1.5 text-[15px]">{user.email || '—'}</dd>
+                </div>
+              </dl>
+              <p className="mt-8 text-[12px] leading-relaxed text-ink-500">
+                Your profile is managed through your {user.email ? 'Google' : 'account'} sign-in. To change your name or email, update it with your sign-in provider.
+              </p>
+            </div>
+          )}
+
+          {section === 'orders' && <Empty title="No orders yet" body="When you place an order it will appear here with tracking and invoices." cta={{ href: '/shop', label: 'Start shopping' }} />}
+          {section === 'addresses' && <Empty title="No addresses saved" body="Add a delivery address to check out faster next time." />}
+          {section === 'wishlist' && <Empty title="Your wishlist is empty" body="Tap the heart on any product to save it here for later." cta={{ href: '/shop', label: 'Browse products' }} />}
+
+          {section === 'security' && (
+            <div>
+              <h2 className="display text-[22px]">Security</h2>
+              <div className="mt-6 space-y-4">
+                <Row label="Sign-in method" value={user.email ? 'Google (via Insforge)' : 'Email & password'} />
+                <Row label="Email" value={user.email || '—'} />
+              </div>
+              <button onClick={signOut} className="lux-btn-ghost mt-8 hover:border-saffron-500 hover:text-saffron-500">
+                Sign out of this device
+              </button>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 10%, transparent)' }}>
+      <span className="text-[13px] text-ink-400">{label}</span>
+      <span className="text-[13px]">{value}</span>
+    </div>
+  );
+}
+
+function Empty({ title, body, cta }: { title: string; body: string; cta?: { href: string; label: string } }) {
+  return (
+    <div className="flex flex-col items-start">
+      <h2 className="display text-[22px]">{title}</h2>
+      <p className="mt-3 max-w-md text-[13px] leading-relaxed text-ink-500">{body}</p>
+      {cta && (
+        <Link href={cta.href} className="lux-btn-ghost mt-6 hover:border-saffron-500 hover:text-saffron-500">
+          {cta.label}
+        </Link>
+      )}
+    </div>
+  );
+}
