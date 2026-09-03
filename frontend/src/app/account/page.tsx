@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { currentUser, logout, type SessionUser } from '@/lib/auth-client';
+import { currentUser, logout, getToken, type SessionUser } from '@/lib/auth-client';
+
+type Order = { id: string; order_number: string; status: string; total: number; placed_at: string; items: { product_name: string; quantity: number }[] };
+type Address = { id: string; label: string; full_name: string; phone: string; line1: string; line2?: string | null; city: string; state: string; pincode: string; is_default_shipping: number };
+const rupees = (n: number) => `₹${Math.round(Number(n) || 0).toLocaleString('en-IN')}`;
 
 type Section = 'profile' | 'orders' | 'addresses' | 'wishlist' | 'security';
 
@@ -29,6 +33,17 @@ export default function AccountPage() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [ready, setReady] = useState(false);
   const [section, setSection] = useState<Section>('profile');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const token = getToken();
+    if (!token) return;
+    const h = { Authorization: `Bearer ${token}` };
+    fetch('/api/orders', { headers: h }).then((r) => r.json()).then((j) => setOrders(j.orders || [])).catch(() => {});
+    fetch('/api/addresses', { headers: h }).then((r) => r.json()).then((j) => setAddresses(j.addresses || [])).catch(() => {});
+  }, [ready]);
 
   useEffect(() => {
     currentUser()
@@ -117,8 +132,56 @@ export default function AccountPage() {
             </div>
           )}
 
-          {section === 'orders' && <Empty title="No orders yet" body="When you place an order it will appear here with tracking and invoices." cta={{ href: '/shop', label: 'Start shopping' }} />}
-          {section === 'addresses' && <Empty title="No addresses saved" body="Add a delivery address to check out faster next time." />}
+          {section === 'orders' && (
+            orders.length === 0 ? (
+              <Empty title="No orders yet" body="When you place an order it will appear here with tracking and invoices." cta={{ href: '/shop', label: 'Start shopping' }} />
+            ) : (
+              <div>
+                <h2 className="display text-[22px]">Your Orders</h2>
+                <ul className="mt-6 space-y-3">
+                  {orders.map((o) => (
+                    <li key={o.id}>
+                      <Link href={`/order/${o.id}`} className="flex items-center justify-between gap-4 rounded-xl border p-4 transition-colors hover:border-saffron-500" style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 12%, transparent)' }}>
+                        <span className="min-w-0">
+                          <span className="block text-[14px] font-medium">{o.order_number}</span>
+                          <span className="mt-0.5 block text-[12px] text-ink-500">
+                            {new Date(o.placed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {o.items.length} item{o.items.length !== 1 ? 's' : ''}
+                          </span>
+                          <span className="mt-1 block truncate text-[12px] text-ink-400">{o.items.map((i) => i.product_name).join(', ')}</span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="block text-[14px] text-saffron-500">{rupees(o.total)}</span>
+                          <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]" style={{ background: 'color-mix(in oklab, var(--color-saffron-500) 14%, transparent)', color: 'var(--color-saffron-500)' }}>{o.status}</span>
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )}
+
+          {section === 'addresses' && (
+            addresses.length === 0 ? (
+              <Empty title="No addresses saved" body="Your delivery address is saved automatically when you place an order." cta={{ href: '/shop', label: 'Start shopping' }} />
+            ) : (
+              <div>
+                <h2 className="display text-[22px]">Your Addresses</h2>
+                <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {addresses.map((ad) => (
+                    <li key={ad.id} className="rounded-xl border p-4" style={{ borderColor: 'color-mix(in oklab, var(--color-ink-50) 12%, transparent)' }}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-medium">{ad.full_name}</span>
+                        {ad.is_default_shipping ? <span className="rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.12em]" style={{ background: 'color-mix(in oklab, var(--color-saffron-500) 14%, transparent)', color: 'var(--color-saffron-500)' }}>Default</span> : null}
+                      </div>
+                      <p className="mt-2 text-[12px] leading-relaxed text-ink-400">{ad.line1}{ad.line2 ? `, ${ad.line2}` : ''}, {ad.city}, {ad.state} {ad.pincode}</p>
+                      <p className="mt-1 text-[12px] text-ink-500">{ad.phone}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )}
           {section === 'wishlist' && <Empty title="Your wishlist is empty" body="Tap the heart on any product to save it here for later." cta={{ href: '/shop', label: 'Browse products' }} />}
 
           {section === 'security' && (
